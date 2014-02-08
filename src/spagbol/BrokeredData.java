@@ -1,13 +1,18 @@
 package spagbol;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class BrokeredData {
+    private String id;
     private final DataLoader dataLoader;
     private final int refreshInterval;
     private final TimeUnit refreshIntervalUnit;
+    private List<Map<String,Object>> data;
 
-    public BrokeredData(DataLoader dataLoader, int refreshInterval, TimeUnit refreshIntervalUnit) {
+    public BrokeredData(String id, DataLoader dataLoader, int refreshInterval, TimeUnit refreshIntervalUnit) {
+        this.id = id;
         this.dataLoader = dataLoader;
         this.refreshInterval = refreshInterval;
         this.refreshIntervalUnit = refreshIntervalUnit;
@@ -26,6 +31,14 @@ public class BrokeredData {
     }
 
     void loadData() {
-        dataLoader.loadData();
+        data = dataLoader.loadData();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public List<Map<String, Object>> getData() {
+        return data;
     }
 }

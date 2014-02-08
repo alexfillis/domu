@@ -1,3 +1,4 @@
 - test: test the data reference to data taken from broker is updated when data updated
+- test: notify consumers when data is refreshed
 - test: data cannot be changed
 - test: data returned is as expected

@@ -14,14 +14,18 @@ public class DataBroker {
     private final Map<String, BrokeredData> brokeredDatas;
 
     public DataBroker(ScheduledExecutorService scheduledExecutorService, BrokeredData brokeredData) {
+        this(scheduledExecutorService, asList(brokeredData));
+    }
+
+    public DataBroker(ScheduledExecutorService scheduledExecutorService, List<BrokeredData> brokeredDatas) {
         this.scheduledExecutorService = scheduledExecutorService;
-        brokeredDatas = buildBrokeredDatas(brokeredData);
+        this.brokeredDatas = buildBrokeredDatas(brokeredDatas);
         initCache();
         scheduledDataRefresh();
     }
 
-    private Map<String, BrokeredData> buildBrokeredDatas(BrokeredData brokeredData) {
-        return Maps.uniqueIndex(asList(brokeredData), new Function<BrokeredData, String>() {
+    private Map<String, BrokeredData> buildBrokeredDatas(List<BrokeredData> brokeredDatas) {
+        return Maps.uniqueIndex(brokeredDatas, new Function<BrokeredData, String>() {
             @Override
             public String apply(BrokeredData input) {
                 return input.getId();

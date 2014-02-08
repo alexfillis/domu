@@ -18,12 +18,11 @@ public class DataBrokerTest {
         CountDownLatch dataLoaded = new CountDownLatch(1);
         int interval = 5;
         TimeUnit intervalUnit = TimeUnit.SECONDS;
+        new DataBroker(
+                Executors.newSingleThreadScheduledExecutor(),
+                new BrokeredData(newTestDataLoader(dataLoaded), interval, intervalUnit));
 
         // execute
-        new DataBrokerBuilder()
-                .scheduling(Executors.newSingleThreadScheduledExecutor())
-                .refresh(newTestDataLoader(dataLoaded), interval, intervalUnit)
-                .build();
         long start = currentTimeMillis();
         boolean timedOut = !dataLoaded.await(intervalUnit.toMillis(interval) + 500, TimeUnit.MILLISECONDS);
         long end = currentTimeMillis();

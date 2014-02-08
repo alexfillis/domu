@@ -49,6 +49,32 @@ public class DataBrokerTest {
         assertFalse("no data returned for that id!", data.isEmpty());
     }
 
+    @Test
+    public void data_access_should_not_return_until_data_is_available() throws InterruptedException {
+        String dataId = "testdata";
+        CountDownLatch initData = new CountDownLatch(1);
+        List<Map<String, Object>> testData = testData();
+        int interval = 5;
+        TimeUnit intervalUnit = TimeUnit.SECONDS;
+        BrokeredData brokeredData = new BrokeredData(dataId, newTestDataLoader(initData, testData), interval, intervalUnit);
+        DataBroker dataBroker = new DataBroker(
+                Executors.newSingleThreadScheduledExecutor(),
+                brokeredData);
+
+        // execute
+        List<Map<String, Object>> dataBeforeInit = dataBroker.get(dataId);
+        initData.countDown();
+        dataBroker.awaitInitialisation();
+        List<Map<String, Object>> dataAfterInit = dataBroker.get(dataId);
+
+        //verify
+        assertTrue("before initialisation should be empty!", dataBeforeInit.isEmpty());
+        assertFalse("after initialisation  should NOT be empty!", dataAfterInit.isEmpty());
+        assertEquals("different number of events", 1, brokeredData.getEvents().size());
+        String eventMessage = brokeredData.getEvents().iterator().next().getMessage();
+        assertTrue("should of been timeout event", eventMessage.contains("Time") && eventMessage.contains("out") && eventMessage.contains(dataId));
+    }
+
     private List<Map<String, Object>> testData() {
         Map<String, Object> dataItem = new HashMap<String, Object>();
         dataItem.put("firstName", "John");
@@ -81,6 +107,23 @@ public class DataBrokerTest {
             public List<Map<String, Object>> loadData() {
                 dataLoaded.countDown();
                 return null;
+            }
+        };
+    }
+
+    private DataLoader newTestDataLoader(final CountDownLatch initData, final List<Map<String, Object>> testData) {
+        return new DataLoader() {
+            @Override
+            public List<Map<String, Object>> loadData() {
+                try {
+                    if (!initData.await(5, TimeUnit.SECONDS)) {
+                        return null;
+                    }
+                } catch (InterruptedException e) {
+                    return null;
+                }
+
+                return testData;
             }
         };
     }

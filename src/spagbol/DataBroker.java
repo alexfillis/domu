@@ -22,6 +22,7 @@ public class DataBroker {
         this.brokeredDatas = buildBrokeredDatas(brokeredDatas);
         initCache();
         scheduledDataRefresh();
+        awaitInitialisation();
     }
 
     private Map<String, BrokeredData> buildBrokeredDatas(List<BrokeredData> brokeredDatas) {
@@ -43,6 +44,12 @@ public class DataBroker {
                     }
                 });
             }
+        }
+    }
+
+    public void awaitInitialisation() {
+        for (final BrokeredData brokeredData : brokeredDatas.values()) {
+            brokeredData.awaitInitialisation();
         }
     }
 

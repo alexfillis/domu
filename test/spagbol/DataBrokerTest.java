@@ -2,6 +2,7 @@ package spagbol;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -9,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class DataBrokerTest {
     @Test
@@ -70,9 +72,26 @@ public class DataBrokerTest {
         //verify
         assertTrue("before initialisation should be empty!", dataBeforeInit.isEmpty());
         assertFalse("after initialisation  should NOT be empty!", dataAfterInit.isEmpty());
-        assertEquals("different number of events", 1, brokeredData.getEvents().size());
-        String eventMessage = brokeredData.getEvents().iterator().next().getMessage();
-        assertTrue("should of been timeout event", eventMessage.contains("Time") && eventMessage.contains("out") && eventMessage.contains(dataId));
+        assertEquals("different number of events", 1, dataBroker.getEvents().size());
+        DataBroker.DataEvent dataEvent = dataBroker.getEvents().iterator().next();
+        assertEquals("dataId should be the same", dataId, dataEvent.getDataId());
+        assertTrue("should of been timeout event", dataEvent.getMessage().contains("Time") && dataEvent.getMessage().contains("out"));
+    }
+
+    @Test(expected = IOException.class)
+    public void should_catch_record_any_data_load_errors() throws Throwable {
+        String dataId = "testdata";
+        int interval = 5;
+        TimeUnit intervalUnit = TimeUnit.SECONDS;
+
+        // execute
+        DataBroker dataBroker = new DataBroker(
+                Executors.newSingleThreadScheduledExecutor(),
+                new BrokeredData(dataId, newTestExceptionDataLoader(), interval, intervalUnit));
+
+        //verify
+        assertEquals("different number of events", 2, dataBroker.getEvents().size());
+        throw dataBroker.getEvents().iterator().next().getCause();
     }
 
     private List<Map<String, Object>> testData() {
@@ -95,7 +114,7 @@ public class DataBrokerTest {
     private DataLoader newTestDataLoader(final List<Map<String, Object>> testData) {
         return new DataLoader() {
             @Override
-            public List<Map<String, Object>> loadData() {
+            public List<Map<String, Object>> loadData() throws Exception {
                 return testData;
             }
         };
@@ -104,7 +123,7 @@ public class DataBrokerTest {
     private DataLoader newTestDataLoader(final CountDownLatch dataLoaded) {
         return new DataLoader() {
             @Override
-            public List<Map<String, Object>> loadData() {
+            public List<Map<String, Object>> loadData() throws Exception {
                 dataLoaded.countDown();
                 return null;
             }
@@ -114,7 +133,7 @@ public class DataBrokerTest {
     private DataLoader newTestDataLoader(final CountDownLatch initData, final List<Map<String, Object>> testData) {
         return new DataLoader() {
             @Override
-            public List<Map<String, Object>> loadData() {
+            public List<Map<String, Object>> loadData() throws Exception {
                 try {
                     if (!initData.await(5, TimeUnit.SECONDS)) {
                         return null;
@@ -124,6 +143,15 @@ public class DataBrokerTest {
                 }
 
                 return testData;
+            }
+        };
+    }
+
+    private DataLoader newTestExceptionDataLoader() {
+        return new DataLoader() {
+            @Override
+            public List<Map<String, Object>> loadData() throws Exception {
+                throw new IOException();
             }
         };
     }

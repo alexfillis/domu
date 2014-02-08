@@ -1,4 +1,3 @@
-- test: exception thrown during data load
 - test: test the data reference to data taken from broker is updated when data updated
 - test: data cannot be changed
 - test: data returned is as expected
